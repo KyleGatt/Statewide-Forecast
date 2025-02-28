@@ -14,7 +14,7 @@ library(readxl)
 Forecast.year<-2025
 
 #===============================================================================
-#                       5-year Averages                                       #
+#                       5-year Average Harvests                                #
 #===============================================================================
  # RECENT 5-YEAR AVERAGE HARVESTS BY MANAGMENT AREA
 ## Harvest data will need to be updated each year through OceanAK quires here: 
@@ -27,7 +27,7 @@ Forecast.year<-2025
 # Staff had infrequently included test fish harvests in season summary totals
 
 # Data import:
-CommercialHarvestData <- read_excel("CommercialHarvestData.xlsx")
+CommercialHarvestData <- read_excel("Data/CommercialHarvestData.xlsx")
 
 # Setting the pink salmon life cycle to forecast for
 Life.Cycle<-if_else(Forecast.year%% 2 == 0, "even", "odd")
@@ -47,9 +47,9 @@ AverageAreaHarvest<-Harvest.Longer%>%
   group_by(ManagementArea,Species)%>%slice_tail(n=5)%>% #pulling the recent 5 entries (recent 5 years for all species other than pinks)
   group_by(ManagementArea,Species)%>%summarize(Harvest=mean(Harvest))%>% #Estimating the recent 5 average harvest
   mutate(Harvest=ifelse(ManagementArea%in%"Southeast" & Species%in% c("Chinook","pink","chum")|
-                        ManagementArea%in%"Kodiak" & Species%in% c("sockeye","pink")|
+                        ManagementArea%in%"Kodiak" & Species%in% c("sockeye","coho","pink","chum")|
                         ManagementArea%in%"Chignik" & Species%in% "sockeye"|
-                        ManagementArea%in%"South Alaska Peninsula" & Species%in% "pink"|
+                        ManagementArea%in%"South Alaska Peninsula" & Species%in% c("pink","sockeye","chum")|
                         ManagementArea%in%"North Alaska Peninsula" & Species%in% "sockeye"|
                         ManagementArea%in%"Upper Cook Inlet" & Species%in% c("Chinook","sockeye"),NA,Harvest))%>% # Upper Cook Inlet Chinook are not a targeted species and the sockeye forecast is the ADFG forecast doc
   pivot_wider(names_from = Species,values_from = Harvest)%>% # flip the dataframe for easier interpretation
@@ -65,7 +65,7 @@ AverageAreaHarvest<-Harvest.Longer%>%
     # CCPH harvest stands for "Commercial Common Property Harvest"
 
 # Import harvest data for the Copper and Bering River districts. Data to update this file can be found in the same quires provided for the general commercial harvest above.
-CopperBering <- read_excel("PWSWildHarvest.xlsx")
+CopperBering <- read_excel("Data/PWSWildHarvest.xlsx")
 
 # Estimating the recent 10 year average harvest for each area by species
 CBAverage<-CopperBering%>%
@@ -75,7 +75,7 @@ CBAverage<-CopperBering%>%
                                      coho=mean(coho))
 
 # will fill in a black data frame with appropriate values. These numbers come from an array of sources
-PWSProjectionData <- read_excel("PWSFrame.xlsx")
+PWSProjectionData <- read_excel("Data/PWSFrame.xlsx")
 
 # First fill out natural production data
 PWSProjectionData[1,3]<- 5000 # Copper River Chinook Common Property Harvest. This is provided by the PWS research biologist
@@ -150,7 +150,7 @@ Table1<-Table1%>%rbind(AverageAreaHarvest%>%filter(ManagementArea%in%"Southeast"
 
 Table1[6,4]            #SE does not formally forecast chinook harvest but rather a PSE is provided. If available, input here
 Table1[6,7]<- 29000000 #Pink harvest is taken from ADF&G forecast document. 
-Table1[6,8]<- (14101446/0.91)-14101446 #using the 5-yr avarage brood chum forecast from PNP forecast document (cell T127) to divide potential hatchery harvest by 91% to expand to total harvest (wild plus hatchery). 
+Table1[6,8]<- (14101446/0.91)-14101446 #using the 5-yr average brood chum forecast from PNP forecast document (cell T127) to divide potential hatchery harvest by 91% to expand to total harvest (wild plus hatchery). 
 #Then, subtract hatchery amount from the total to estimate wild harvest.
 
 # Southeast Hatchery Production
@@ -182,7 +182,7 @@ Table1[3,8]<- 0 #chum 5-yr average brood from PNP forecast document cell Q130
 # Upper Cook Inlet- coho, pink, and chum uses the 5-year harvest
 Table1<-Table1%>%rbind(AverageAreaHarvest%>%filter(ManagementArea%in%"Upper Cook Inlet")%>%mutate(Origin=NA)) #coho, chum and pink use the 5-yr average harvest
 
-Table1[9,4]<- NA # Upper Cook Inlet Chinook will not have a forecast because it is not a directed species
+Table1[9,4] # Upper Cook Inlet Chinook will not have a forecast because it is not a directed species
 Table1[9,5]<- 4930000 #available commercial harvest of sockeye taken from the ADFG forecast document
 
 # Bristol Bay
@@ -197,8 +197,10 @@ Table1[10,5]<- 36330000 ##available commercial harvest of sockeye taken from the
 # Kodiak Natural Production
 Table1<-Table1%>%rbind(AverageAreaHarvest%>%filter(ManagementArea%in%"Kodiak")%>%mutate(Origin="Natural production")) #Chinook, coho, and chum use the 5-yr average harvest
 
-Table1[11,5]<- 1311000 #sockeye harvest projection taken from westward region projection document 
-Table1[11,7]<- 21005000 #pink harvest projection taken from ADF&G forecast document or provided from Kodak staff
+Table1[11,5]<- 1311000 # sockeye harvest projection taken from westward region projection document 
+Table1[11,6]<- 165000 # coho harvest projection provided by westward staff in the "westward document". This is not a simple 5-yr average as historical documents suggest.
+Table1[11,7]<- 21005000 # pink harvest projection taken from ADF&G forecast document or provided from Kodak staff
+Table1[11,8]<- 372000 # chum harvest projection provided by westward staff in the "westward document". This is not a simple 5-yr average as historical documents suggest.
 
 # Kodiak Hatchery Production
 Table1[4,4]  # Chinook harvest projection taken from westward region projection document 
@@ -215,7 +217,9 @@ Table1[12,5]<- 757000 #sockeye harvest projection taken from westward region pro
 # South Penn
 Table1<-Table1%>%rbind(AverageAreaHarvest%>%filter(ManagementArea%in%"South Alaska Peninsula")%>%mutate(Origin=NA)) # Average harvest will not match what staff provide because of PU and Test harvests
 
+Table1[13,5]<- 2621000 # sockeye harvest taken from westward region projection document. This is not a simple 5-yr average.
 Table1[13,7]<- 10639000 # pink harvest taken from westward region projection document
+Table1[13,8]<- 1142000 # chum harvest taken from westward region projection document. This is not a simple 5-yr average.
 
 # North Penn
 Table1<-Table1%>%rbind(AverageAreaHarvest%>%filter(ManagementArea%in%"North Alaska Peninsula")%>%mutate(Origin=NA))
@@ -252,8 +256,8 @@ Table1Ordered <- Table1[order(Table1$ManagementArea, Table1$Origin, Table1$Origi
 #generating Region and management Area totals
 RegionTotals<-Table1%>%group_by(Region)%>%summarize(Origin=NA,
                                                     ManagementArea="Region total",
-                                                    Chinook=sum(Chinook),
-                                                    sockeye=sum(sockeye),
+                                                    Chinook=sum(Chinook,na.rm=T),
+                                                    sockeye=sum(sockeye,na.rm = T),
                                                     coho=sum(coho),
                                                     pink=sum(pink),
                                                     chum=sum(chum))%>%
@@ -274,7 +278,7 @@ Table1Ordered<-Table1Ordered%>%arrange(Region)%>%rbind(StatewideTotal)
 
 Table1Ordered[17,2]<-"Region total"
 
-#Generating management area and region totals
+# Reformatting region and area totals
 Table1formatted<-Table1Ordered%>% 
   rowwise()%>%
   mutate(Total = round(sum(c_across(Chinook:chum), na.rm = TRUE)/1000,digits = 0)) %>%
@@ -300,21 +304,22 @@ Table1Final<-Table1formatted%>%
   flextable()%>%
   theme_apa()%>%
   set_header_labels(ManagementArea="Management area")%>%
+  
 
-  merge_v(j=c("Region","ManagementArea"), part="body",combine = T)%>%
+  merge_v(j=c("Region","ManagementArea"), part="body",combine = T)%>% # Merging cells to remove duplicates
   merge_v(j=1)%>%
   valign(j=1:2, valign = "top")%>%
   
-  colformat_double(j=4:9,digits = 0)%>%
+  colformat_double(j=4:9,digits = 0)%>% # Formatting cells to remove decimal places
   
-  align(j=1:3, align = "left", part = "all")%>%
+  align(j=1:3, align = "left", part = "all")%>% # Re-aligning cell contents
   align(j=4:9, align = "right", part = "all")%>%
   
-  add_header_row(values = c("", "Species",""), colwidths = c(3,5,1))%>%
+  add_header_row(values = c("", "Species",""), colwidths = c(3,5,1))%>% # Adding the spanning header
   align(i=1,j=1:9,align = "center",part = "header")%>%
   border(i=1, j = 1:3, border = fp_border(color = NA, width = 0))%>%
   
-  hline(i=2, j = 1:9, border = border_style, part = "body")%>%
+  hline(i=2, j = 1:9, border = border_style, part = "body")%>% # Adding borders
   hline(i=3, j = 1:9, border = border_style, part = "body")%>%
   
   hline(i=9, j = 1:9, border = border_style, part = "body")%>%
@@ -327,7 +332,7 @@ Table1Final<-Table1formatted%>%
   hline(i=18, j = 1:9, border = border_style, part = "body")%>%
   
   
-  footnote( i = c(1,1, 4, 6,6,6, 8,8, 9,9,9, 11,11,11, 13,13,13, 14,14,14,14, 15,15,15,15), 
+footnote( i = c(1,1, 4, 6,6,6, 8,8, 9,9,9, 11,11,11, 13,13,13, 14,14,14,14, 15,15,15,15), 
             j = c(5,6, 6, 4,5,8, 6,8, 4,6,8, 4,6,8, 4,6,8, 4,5,6,8, 4,5,6,8),
             value = as_paragraph("Average harvest of the previous five years (2020–2024)."),
             ref_symbols = c("a"),
@@ -341,9 +346,7 @@ footnote( i = c(8, 9, 13, 15),
   
 footnote( i = 2, 
           j = 3,
-            value = as_paragraph("Hatchery salmon projections made by Southern Southeast Regional Aquaculture Association, Northern Southeast Regional Aquaculture Association, 
-                                 Douglas Island Pink and Chum, Armstrong-Keta Inc., and Metlakatla Indian Community less broodstock (5-year average), 
-                                 and excess. Wild chum salmon catch estimated as 9% of total catch."),
+            value = as_paragraph("Hatchery salmon projections made by Southern Southeast Regional Aquaculture Association, Northern Southeast Regional Aquaculture Association, Douglas Island Pink and Chum, Armstrong-Keta Inc., and Metlakatla Indian Community less broodstock (5-year average), and excess. Wild chum salmon catch estimated as 9% of total catch."),
             ref_symbols = c("c"),
             part = "body") %>%
   
@@ -355,8 +358,7 @@ footnote( i = 4,
   
 footnote( i = 5, 
           j = 3,
-          value = as_paragraph("Hatchery salmon projections made by Prince William Sound Aquaculture Corporation and Valdez Fisheries Development Association. 
-          Gulkana Hatchery projection made by ADF&G, less broodstock (5-year average)."),
+          value = as_paragraph("Hatchery salmon projections made by Prince William Sound Aquaculture Corporation and Valdez Fisheries Development Association. Gulkana Hatchery projection made by ADF&G, less broodstock (5-year average)."),
           ref_symbols = c("e"),
           part = "body")%>%
 
@@ -374,15 +376,13 @@ footnote( i = 8,
   
 footnote( i = 11, 
           j = 5,
-            value = as_paragraph("Total Kodiak harvest of natural run sockeye salmon includes projected harvests from formally forecasted systems, 
-                                 projected Chignik harvest at Cape Igvak, and projected harvest from additional minor systems."),
+            value = as_paragraph("Total Kodiak harvest of natural run sockeye salmon includes projected harvests from formally forecasted systems, projected Chignik harvest at Cape Igvak, and projected harvest from additional minor systems."),
             ref_symbols = c("h"),
             part = "body")%>%
 
 footnote( i = 12, 
           j = 3,
-          value = as_paragraph("Hatchery projections made by Kodiak Regional Aquaculture Association. 
-          Sockeye salmon hatchery projections include enhanced Spiridon Lake sockeye salmon run harvest forecast and other Kodiak Regional Aquaculture Association projections."),
+          value = as_paragraph("Hatchery projections made by Kodiak Regional Aquaculture Association. Sockeye salmon hatchery projections include enhanced Spiridon Lake sockeye salmon run harvest forecast and other Kodiak Regional Aquaculture Association projections."),
           ref_symbols = c("i"),                     
           part = "body")%>%
   
@@ -421,19 +421,19 @@ line_spacing(space = 1, part = "all")%>%
 font(fontname = "Times New Roman",part="all")%>%
 fontsize(size=10,part="body")%>%
 fontsize(size=9,part = "footer")%>%
+padding(padding = 0, part = "all")%>%
 fix_border_issues()%>%
 autofit()
 
-Table1Final%>%save_as_docx(path="C:/Users/kpgatt/OneDrive - State of Alaska/Documents/GitHub/Statewide-Forecast/Table 1 Final.docx", pr_section = sect_properties)
-
-
+# saving the table to the forecast folder.
+Table1Final%>%save_as_docx(path="C:/Users/kpgatt/OneDrive - State of Alaska/Documents/GitHub/Statewide-Forecast/Figures and Tables/Table 1 Final.docx", pr_section = sect_properties)
 
 
 
 #===============================================================================
-#                         Forecast Performance                                #
+#                         Forecast Figures                                #
 #===============================================================================
-ActualvsPredicted<-read_excel("ActualvsProjected.xlsx")
+ActualvsPredicted<-read_excel("Data/ActualvsProjected.xlsx")
 
 ActualvsPredicted.New<-ActualvsPredicted %>%select(1:3)%>%mutate(Harvest=Actual,Type="Actual Harvest")%>%select(-Actual)%>%
   rbind(ActualvsPredicted %>%select(1:2,4)%>%mutate(Harvest=Projected,Type="Projected Harvest")%>%select(-Projected))%>%
@@ -448,7 +448,7 @@ ActualvsPredicted.New<-ActualvsPredicted %>%select(1:3)%>%mutate(Harvest=Actual,
                  chum=chum/1000000)%>%select(Year, Type, Chinook, sockeye, coho, pink, chum)) # Lets add into the current years projected totals
 
 
-
+# Chinook Harvest 
 Figure2<-ActualvsPredicted.New%>%
   ggplot(aes(Year,Chinook,color=Type,lty=Type))+
   geom_line(size=1.1)+
@@ -464,8 +464,9 @@ Figure2<-ActualvsPredicted.New%>%
   xlab("")+
   ylab("Projected Harvest (in millions of fish)")
 
-  ggsave(Figure2,filename="Figure2.jpeg")
+ggsave(Figure2,filename="Figures and Tables/Figure2.jpeg")
 
+# Sockeye Harvest
 Figure3<-ActualvsPredicted.New%>%
   ggplot(aes(Year,sockeye,color=Type,lty=Type))+
   geom_line(size=1.1)+
@@ -481,8 +482,9 @@ Figure3<-ActualvsPredicted.New%>%
   xlab("")+
   ylab("Projected Harvest (in millions of fish)")
 
-ggsave(Figure3,filename="Figure3.jpeg")
+ggsave(Figure3,filename="Figures and Tables/Figure3.jpeg")
 
+# coho Harvest
 Figure4<-ActualvsPredicted.New%>%
   ggplot(aes(Year,coho,color=Type,lty=Type))+
   geom_line(size=1.1)+
@@ -498,8 +500,9 @@ Figure4<-ActualvsPredicted.New%>%
   xlab("")+
   ylab("Projected Harvest (in millions of fish)")
 
-ggsave(Figure4,filename="Figure4.jpeg")
+ggsave(Figure4,filename="Figures and Tables/Figure4.jpeg")
 
+# pink Harvest
 Figure5<-ActualvsPredicted.New%>%
   ggplot(aes(Year,pink,color=Type,lty=Type))+
   geom_line(size=1.1)+
@@ -515,8 +518,9 @@ Figure5<-ActualvsPredicted.New%>%
   xlab("")+
   ylab("Projected Harvest (in millions of fish)")
  
-ggsave(Figure2,filename="Figure5.jpeg")
+ggsave(Figure5,filename="Figures and Tables/Figure5.jpeg")
 
+# Chum harvest
 Figure6<-ActualvsPredicted.New%>%
   ggplot(aes(Year, chum,color=Type,lty=Type))+
   geom_line(size=1.1)+
@@ -532,7 +536,33 @@ Figure6<-ActualvsPredicted.New%>%
   xlab("")+
   ylab("Projected Harvest (in millions of fish)")
 
-ggsave(Figure6,filename="Figure6.jpeg")
+ggsave(Figure6,filename="Figures and Tables/Figure6.jpeg")
+
+
+
+#==============================================================================#
+                        #Forecast Statistics#
+#==============================================================================#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
