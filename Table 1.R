@@ -266,10 +266,12 @@ RegionTotals<-Table1%>%group_by(Region)%>%summarize(Origin=NA,
                                                     chum=sum(chum))%>%
   filter(!Region%in%"Arctic-Yukon-Kuskokwim Region")
 
+RegionTotals[1,4]<-103150 #need to include SE Treaty allocation which is Total allocation - sport allocation
+
  
-StatewideTotal<-Table1%>%summarize(Region="Statewide total",
+StatewideTotal<-Table1Ordered%>%summarize(Region="Statewide total",
                                    Origin=NA,ManagementArea=NA,
-                                   Chinook=sum(Chinook,na.rm=T),
+                                   Chinook=sum(Chinook,na.rm=T) + 103150, #We have to manually add in SE Chinook here
                                    sockeye=sum(sockeye,na.rm=T),
                                    coho=sum(coho,na.rm=T),
                                    pink=sum(pink,na.rm=T),
@@ -294,7 +296,7 @@ Table1formatted<-Table1Ordered%>%
          chum=round(chum/1000,digits= 0))
 
 Table1formatted[8,5]<-NA # We need to hide the UCI comm harvest forecast because this is allocation in nature
-Table1formatted[3,4]<-NA #SEAK Chinook forecast is not available for 2025
+
 
 # Setting up table properties
 sect_properties <- prop_section(
@@ -354,8 +356,7 @@ footnote( i = 2,
   
 footnote( i = 3, 
             j = 4,
-            value = as_paragraph("Southeast Chinook treaty forecast not available. The allowable catch of Chinook salmon in Southeast Alaska is determined by the Pacific Salmon Commission, which has not published the quota for 2025. 
-                                 Release of the 2025 Chinook salmon quota for Southeast Alaska is expected in late March or early April."),
+            value = as_paragraph("The allowable catch of Chinook salmon in Southeast Alaska is determined by the Pacific Salmon Commission."),
             ref_symbols = c("c"),
             part = "body")%>%  
   
